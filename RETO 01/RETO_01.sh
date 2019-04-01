@@ -54,6 +54,8 @@ nueva_partida(){
     say_machine 'Antes de empezar voy primero a limpiar la mesa...' 2
     unset USER[*]
     unset COMP[*]
+    unset USER_SET
+    unset COMP_SET
     all_cards
     
     say_machine 'Vale, Vamos a comenzar una nueva partida' 2
@@ -70,7 +72,7 @@ nueva_partida(){
         result=$?
         if [ $result -eq 1 ]
         then
-            # TODO: Desarrollo de la partida
+            # Desarrollo de la partida
             unset posicion_encontrado
             buscar_en_maquina $seleccion
             posicion_encontrado=$?
@@ -82,11 +84,13 @@ nueva_partida(){
                 USER[$longiutd_user_cards+1]=${COMP[$posicion_encontrado]}
                 shift_comp $posicion_encontrado
             else
+                # Obtiene una carta del Oceano
                 longiutd_user_cards=${#USER[@]}
                 say_machine 'A pescar!!!' 3
                 number_random ${#CARDS[@]}
                 numberRandom=$?
                 USER[$longiutd_user_cards+1]=${CARDS[$numberRandom]}
+                echo '# '${CARDS[$numberRandom]}
                 shift_card $numberRandom
             fi
         elif [ $seleccion -eq -1 ]
@@ -105,9 +109,65 @@ nueva_partida(){
         fi
 
         # Comprobaciones finales
-        # TODO: Comprobar que se ha conseguido un SET
-        # TODO: Comprobar que no se han terminado las cartas
-        # TODO: Realizar movimiento de la maquina
+
+        # Comprueba si ha conseguido el User un SET
+        need_check=1
+        while [ $need_check -eq 1 ]
+        do
+            check_cards_set 0
+            result_checked=$?
+            if [ $result_checked -eq 0 ]
+            then
+                need_check=0
+                break
+            fi
+        done
+
+        # Comprueba que no se han terminado las cartas
+        check_cards_finish
+        if [ $? -eq 1 ]
+        then
+            say_machine 'Juego terminado, ha sido un placer jugar contigo.' 1.4
+            finGame=true
+        fi
+
+        # Desarrollo de la partida para Maquina
+        unset posicion_encontrado
+        number_random 10
+        seleccion=$?
+        buscar_en_user $seleccion
+        posicion_encontrado=$?
+            
+            if [ $posicion_encontrado -ne 255 ]
+            then
+                # Coloca carta de User a MAchine
+                longitud_machine_cards=${#COMP[@]}
+                COMP[$longitud_machine_cards+1]=${USER[$posicion_encontrado]}
+                shift_user $posicion_encontrado
+                say_machine 'Gracias por tu carta' 1.5
+            else
+                # Obtiene una carta del Oceano
+                longitud_machine_cards=${#COMP[@]}
+                say_machine 'Voy a pescar' 3
+                number_random ${#CARDS[@]}
+                numberRandom=$?
+                COMP[$longitud_machine_cards+1]=${CARDS[$numberRandom]}
+                shift_card $numberRandom
+            fi
+
+        # Comprueba si ha conseguido el Machine un SET
+        need_check=1
+        while [ $need_check -eq 1 ]
+        do
+            check_cards_set 1
+            result_checked=$?
+            if [ $result_checked -eq 0 ]
+            then
+                need_check=0
+                break
+            fi
+        done
+
     done
 }
 
@@ -123,18 +183,132 @@ buscar_en_maquina(){
     do
         obtener_numero_carta $i
         numeroCarta=$?
-        echo 'Comparando que la carta ' $i ' equivale a la de ' $1
         if [ $numeroCarta -eq $1 ]
         then
             say_machine 'Tengo una carta del número que buscas' 1.2
             say_machine 'Machine te ha dado su carta' 1
-            echo 'Posicion devuelta ==> ' $posicion
+            echo '# '$i
             return $posicion
         fi
         posicion=$((posicion+1))
     done
     
     return -1
+}
+
+# Metodo mueve elemento carta de usuario a maquina
+# $1 Valor a buscar en el array del usuario
+# Return posición donde se encuentra el elemento o -1 si no se encuentra
+buscar_en_user(){
+    array_numerico_USER=${USER[*]}
+    
+    encontrado=false
+    posicion=0
+    for i in ${USER[*]}
+    do
+        obtener_numero_carta $i
+        numeroCarta=$?
+        if [ $numeroCarta -eq $1 ]
+        then
+            say_machine 'Tienes una carta para mi' 1.2
+            say_machine 'Le has dado una carta a Machine' 1
+            echo '# '$i
+            return $posicion
+        fi
+        posicion=$((posicion+1))
+    done
+    
+    return -1
+}
+
+# Comprueba si ha conseguido realizar un SET
+# $1 Numero del participante 0 => USER ; 1 => COMP
+# Returns 0 => Nada que hacer ; 1 => Se ha encontrado set, reComprobar
+check_cards_set(){
+    player=$1
+
+    if [ $player -eq 0 ]
+    then
+        # User
+        for i in ${USER[@]}
+        do
+            obtener_numero_carta $i
+            numero_busqueda=$?
+            acumulando_valor=0
+            for o in ${USER[@]}
+            do
+                obtener_numero_carta $o
+                numero_consultando=$?
+                if [ $numero_busqueda = $numero_consultando ]
+                then
+                    # Contabilizar para en caso de detectar 4 saltar un SET
+                    acumulando_valor=$((acumulando_valor+1))
+                fi
+            done
+
+            if [ $acumulando_valor -eq 4 ]
+            then
+                say_machine 'Has conseguido reunir las cartas del $((numero_busqueda))' 2
+                USER_SET=$((USER_SET+1))
+                echo 'Puntos USER =>    '$USER_SET
+                echo 'Puntos Machine => '$COMP_SET
+
+                # TODO: Quitar cartas del número localizado
+                return 1
+            fi
+        done
+    else
+        # Comp
+        for i in ${COMP[@]}
+        do
+            obtener_numero_carta $i
+            numero_busqueda=$?
+            acumulando_valor=0
+            for o in ${COMP[@]}
+            do
+                obtener_numero_carta $o
+                numero_consultando=$?
+                if [ $numero_busqueda = $numero_consultando ]
+                then
+                    # Contabilizar para en caso de detectar 4 saltar un SET
+                    acumulando_valor=$((acumulando_valor+1))
+                fi
+            done
+
+            if [ $acumulando_valor -eq 4 ]
+            then
+                say_machine 'He conseguido reunir las 4 cartas del $((numero_busqueda))' 2
+                COMP_SET=$((COMP_SET+1))
+                echo 'Puntos USER =>    '$USER_SET
+                echo 'Puntos Machine => '$COMP_SET
+                
+                # TODO: Quitar cartas del número localizado
+                return 1
+            fi
+        done
+    fi
+
+    return 0
+}
+
+# Comprueba que el juego ha finalizado al no contar con más cartas
+# Returns 1 => Sin más cartas (Fin) ; 0 => Aún hay cartas
+check_cards_finish(){
+    # Sin más cartas en el mazo
+    if [ ${#CARDS[@]} -eq 0 ]
+    then 
+        # Usuario sin más cartas
+        if [ ${#USER[@]} -eq 0 ]
+        then
+            # Machine sin más cartas
+            if [ ${#COMP[@]} -eq 0 ]
+            then
+                return 1
+            fi
+        fi
+    fi
+
+    return 0
 }
 
 # Baraja cartas
@@ -247,7 +421,7 @@ check_number(){
 
 # Imprime linea
 linea(){
-    echo '---------------------------------------------'
+    echo '---------------------------------------------------------------------'
 }
 
 # Prepara todas las cartas de la partida
