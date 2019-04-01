@@ -71,7 +71,24 @@ nueva_partida(){
         if [ $result -eq 1 ]
         then
             # TODO: Desarrollo de la partida
+            unset posicion_encontrado
             buscar_en_maquina $seleccion
+            posicion_encontrado=$?
+            
+            if [ $posicion_encontrado -ne 255 ]
+            then
+                # Coloca carta de Machine a User
+                longiutd_user_cards=${#USER[@]}
+                USER[$longiutd_user_cards+1]=${COMP[$posicion_encontrado]}
+                shift_comp $posicion_encontrado
+            else
+                longiutd_user_cards=${#USER[@]}
+                say_machine 'A pescar!!!' 3
+                number_random ${#CARDS[@]}
+                numberRandom=$?
+                USER[$longiutd_user_cards]=${CARDS[$numberRandom]}
+                shift_card $numberRandom
+            fi
         elif [ $seleccion -eq -1 ]
         then
             say_machine 'Te has rendido' 1
@@ -86,12 +103,14 @@ nueva_partida(){
             say_machine 'Recuerda que solo puedes poner numeros comprendidos del 1 al 10' 1
             say_machine 'Teclea el número que buscas, si quieres dejar la partida a medias y rendirte teclea -1' 1.5
         fi
+
+        # Comprobaciones finales
+        # TODO: Comprobar que se ha conseguido un SET
+        # TODO: Comprobar que no se han terminado las cartas
+        # TODO: Realizar movimiento de la maquina
     done
 }
 
-TODO: Metodo para buscar si la maquina tiene la carta que busco
-TODO: Metodo para que la maquina pueda decidir
-TODO: Metodo para comprobar que tiene un SET
 # Metodo mueve elemento carta de maquina a usuario
 # $1 Valor a buscar en el array de la maquina
 # Return posición donde se encuentra el elemento o -1 si no se encuentra
@@ -107,15 +126,15 @@ buscar_en_maquina(){
         if [ $numeroCarta -eq $1 ]
         then
             echo 'Se ha encontrado una coincidencia en la posición '$posicion
-            say_machine 'Tengo una carta con el '$1 1.2
-            say_machine $machine' ha dado su carta' 1
+            say_machine 'Tengo una carta del número que buscas' 1.2
+            say_machine 'Machine ha dado su carta' 1
             return $posicion
         else
-            echo 'No coincide el valor '$i' con '$1
+            echo 'No coincide el valor '$numeroCarta' con '$1
         fi
         posicion=$((posicion+1))
     done
-
+    
     return -1
 }
 
@@ -194,7 +213,7 @@ shift_user(){
 # Quita un elemento de las cartas del usuario
 # y mueve los otros elementos
 # $1 Elemento a quitar
-sift_comp(){
+shift_comp(){å
     unset COMP[$1]
     COMP=( "${COMP[@]}")
 }
