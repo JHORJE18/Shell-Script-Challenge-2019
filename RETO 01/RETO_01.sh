@@ -140,7 +140,7 @@ nueva_partida(){
             
             if [ $posicion_encontrado -ne 255 ]
             then
-                # Coloca carta de User a MAchine
+                # Coloca carta de User a Machine
                 longitud_machine_cards=${#COMP[@]}
                 COMP[$longitud_machine_cards+1]=${USER[$posicion_encontrado]}
                 shift_user $posicion_encontrado
@@ -253,7 +253,7 @@ check_cards_set(){
                 echo 'Puntos USER =>    '$USER_SET
                 echo 'Puntos Machine => '$COMP_SET
 
-                # TODO: Quitar cartas del número localizado
+                remove_cards_number 0 $numero_busqueda
                 return 1
             fi
         done
@@ -281,8 +281,8 @@ check_cards_set(){
                 COMP_SET=$((COMP_SET+1))
                 echo 'Puntos USER =>    '$USER_SET
                 echo 'Puntos Machine => '$COMP_SET
-                
-                # TODO: Quitar cartas del número localizado
+
+                remove_cards_number 1 $numero_busqueda
                 return 1
             fi
         done
@@ -309,6 +309,46 @@ check_cards_finish(){
     fi
 
     return 0
+}
+
+# Quita las cartas del jugador / maquina con el número indicado
+# $1 Especifica de quien va a quitar 0 => User ; 1 => Machine
+# $2 Número a quitar
+remove_cards_number(){
+    posicion=0
+
+    if [ $1 -eq 0 ]
+    then
+        # Cartas User
+        for i in ${USER[@]}
+        do
+            numero_carta $i
+            numero_actual=$?
+
+            if [ $2 -eq $numero_actual ]
+            then
+                unset USER[$posicion]
+            fi
+
+            posicion=$((posicion+1))
+        done
+        USER=( "${USER[@]}")
+    else
+        # Cartas Machine
+        for i in ${COMP[@]}
+        do
+            numero_carta $i
+            numero_actual=$?
+
+            if [ $2 -eq $numero_actual ]
+            then
+                unset COMP[$posicion]
+            fi
+
+            posicion=$((posicion+1))
+        done
+        COMP=( "${COMP[@]}")
+    fi
 }
 
 # Baraja cartas
