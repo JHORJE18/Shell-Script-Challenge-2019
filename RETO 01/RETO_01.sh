@@ -86,7 +86,7 @@ nueva_partida(){
                 say_machine 'A pescar!!!' 3
                 number_random ${#CARDS[@]}
                 numberRandom=$?
-                USER[$longiutd_user_cards]=${CARDS[$numberRandom]}
+                USER[$longiutd_user_cards+1]=${CARDS[$numberRandom]}
                 shift_card $numberRandom
             fi
         elif [ $seleccion -eq -1 ]
@@ -123,14 +123,13 @@ buscar_en_maquina(){
     do
         obtener_numero_carta $i
         numeroCarta=$?
+        echo 'Comparando que la carta ' $i ' equivale a la de ' $1
         if [ $numeroCarta -eq $1 ]
         then
-            echo 'Se ha encontrado una coincidencia en la posición '$posicion
             say_machine 'Tengo una carta del número que buscas' 1.2
-            say_machine 'Machine ha dado su carta' 1
+            say_machine 'Machine te ha dado su carta' 1
+            echo 'Posicion devuelta ==> ' $posicion
             return $posicion
-        else
-            echo 'No coincide el valor '$numeroCarta' con '$1
         fi
         posicion=$((posicion+1))
     done
@@ -141,7 +140,7 @@ buscar_en_maquina(){
 # Baraja cartas
 barajar_cartas(){
     # Cartas usuario
-    for i in 1 2 3 4 5 6 7
+    for i in 0 1 2 3 4 5 6
     do
         number_random ${#CARDS[*]}
         numberRandom=$?
@@ -154,7 +153,7 @@ barajar_cartas(){
     say_machine 'Ahora repartire mis cartas de forma aleatoria' 2
     
     # Cartas Maquina
-    for i in 1 2 3 4 5 6 7
+    for i in 0 1 2 3 4 5 6
     do
         number_random ${#CARDS[*]}
         numberRandom=$?
@@ -213,7 +212,7 @@ shift_user(){
 # Quita un elemento de las cartas del usuario
 # y mueve los otros elementos
 # $1 Elemento a quitar
-shift_comp(){å
+shift_comp(){
     unset COMP[$1]
     COMP=( "${COMP[@]}")
 }
