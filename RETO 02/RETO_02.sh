@@ -75,36 +75,48 @@ nuevo_libro(){
 eliminar_libro(){
     linea
     echo -e 'Eliminar libro\n'
-
+    listar_libros
+    echo 'Selecciona el ID del libro que desea eiminar'
+    read id_libro_borrar
+    search_libro $id_libro_borrar
+    posicion=$?
+    shift_libros $posicion
+    echo 'Libro borrado correctamente'
+    save_data
 }
 
 # Listar libros
 listar_libros(){
-    for i in ${LIBROS[@]}
-    do
-        id=$(echo $i| cut -d',' -f 1)
-        titulo=$(echo $i| cut -d',' -f 2)
-        autor=$(echo $i| cut -d',' -f 3)
-        genero=$(echo $i| cut -d',' -f 4)
-        year=$(echo $i| cut -d',' -f 5)
-        estanteria=$(echo $i| cut -d',' -f 6)
-        prestado=$(echo $i| cut -d',' -f 7)
+    if [ ${#LIBROS[@]} -eq 0 ]
+    then
+        echo 'No hay libros guardados'
+    else
+        for i in ${LIBROS[@]}
+        do
+            id=$(echo $i| cut -d',' -f 0)
+            titulo=$(echo $i| cut -d',' -f 1)
+            autor=$(echo $i| cut -d',' -f 2)
+            genero=$(echo $i| cut -d',' -f 3)
+            year=$(echo $i| cut -d',' -f 4)
+            estanteria=$(echo $i| cut -d',' -f 5)
+            prestado=$(echo $i| cut -d',' -f 6)
 
-        linea
-        echo 'ID: '$id
-        echo 'Titulo: '$titulo
-        echo 'Autor: '$autor
-        echo 'Genero: '$genero
-        echo 'Año: '$year
-        echo 'Estanteria: '$estanteria
-        if [ $prestado -eq 0 ]
-        then
-            echo 'Prestado: No'
-        else 
-            echo 'Prestado: Sí'
-        fi
-        linea
-    done
+            linea
+            echo 'ID: '$id
+            echo 'Titulo: '$titulo
+            echo 'Autor: '$autor
+            echo 'Genero: '$genero
+            echo 'Año: '$year
+            echo 'Estanteria: '$estanteria
+            if [ $prestado -eq 0 ]
+            then
+                echo 'Prestado: No'
+            else 
+                echo 'Prestado: Sí'
+            fi
+            linea
+        done
+    fi
 }
 
 # Menu usuarios
@@ -116,6 +128,7 @@ menu_usuarios(){
             nuevo_usuario
         ;;
         2)
+            # TODO: Eliminar usuario
             echo 'Accedientdo a eliminar un usuario'
         ;;
         3)
@@ -149,23 +162,28 @@ nuevo_usuario(){
 
 # Listar usuarios
 listar_usuarios(){
-    for i in ${USUARIOS[@]}
-    do
-        id=$(echo $i| cut -d',' -f 1)
-        nombre=$(echo $i| cut -d',' -f 2)
-        apellido1=$(echo $i| cut -d',' -f 3)
-        apellido2=$(echo $i| cut -d',' -f 4)
-        curso=$(echo $i| cut -d',' -f 5)
-        num_prest=$(echo $i| cut -d',' -f 6)
+    if [ ${#USUARIOS[@]} -eq 0 ]
+    then
+        echo 'No hay usuarios guardados'
+    else
+        for i in ${USUARIOS[@]}
+        do
+            id=$(echo $i| cut -d',' -f 0)
+            nombre=$(echo $i| cut -d',' -f 1)
+            apellido1=$(echo $i| cut -d',' -f 2)
+            apellido2=$(echo $i| cut -d',' -f 3)
+            curso=$(echo $i| cut -d',' -f 4)
+            num_prest=$(echo $i| cut -d',' -f 5)
 
-        linea
-        echo 'ID: '$id
-        echo 'Nombre: '$nombre
-        echo 'Apellidos: '$apellido1 $apellido2
-        echo 'Curso: '$curso
-        echo 'Libros prestados: '$num_prest
-        linea
-    done
+            linea
+            echo 'ID: '$id
+            echo 'Nombre: '$nombre
+            echo 'Apellidos: '$apellido1 $apellido2
+            echo 'Curso: '$curso
+            echo 'Libros prestados: '$num_prest
+            linea
+        done
+    fi
 }
 
 # Menu prestamos
@@ -177,10 +195,17 @@ menu_prestamos(){
             nuevo_prestamo
         ;;
         2)
+            # TODO: Eliminar prestamo
             echo 'Accedientdo a eliminar un prestamo'
         ;;
         3)
-            echo 'Consultar usuario (ID/Nombre)'
+            linea
+            echo 'Listado prestamos'
+            listar_prestamos
+        ;;
+        4)
+            # TODO: Consulta prestamo
+            echo 'Consultar un prestamo (ID Usuario/ID Libro'
         ;;
     esac
 }
@@ -209,18 +234,23 @@ nuevo_prestamo(){
 
 # Listar prestamos
 listar_prestamos(){
-    for i in ${PRESTAMOS[@]}
-    do
-        id=$(echo $i| cut -d',' -f 1)
-        id_libro=$(echo $i| cut -d',' -f 2)
-        id_usuario=$(echo $i| cut -d',' -f 3)
+    if [ ${#PRESTAMOS[@]} -eq 0 ]
+    then
+        echo 'No hay prestamos guardados'
+    else
+        for i in ${PRESTAMOS[@]}
+        do
+            id=$(echo $i| cut -d',' -f 0)
+            id_libro=$(echo $i| cut -d',' -f 1)
+            id_usuario=$(echo $i| cut -d',' -f 2)
 
-        linea
-        echo 'ID: '$id
-        echo 'ID Libro: '$id_libro
-        echo 'ID Usuario: '$id_usuario
-        linea
-    done
+            linea
+            echo 'ID: '$id
+            echo 'ID Libro: '$id_libro
+            echo 'ID Usuario: '$id_usuario
+            linea
+        done
+    fi
 }
 
 # Comprueba que el valor introducido es válido
