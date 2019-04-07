@@ -77,7 +77,7 @@ menu_usuarios(){
     read opcion
     case $opcion in
         1)
-            echo 'Accediendo a nuevo usuario'
+            nuevo_usuario
         ;;
         2)
             echo 'Accedientdo a eliminar un usuario'
@@ -88,13 +88,36 @@ menu_usuarios(){
     esac
 }
 
+# Nuevo usuario
+nuevo_usuario(){
+    linea
+    echo -e 'Añadir nuevo usuario\n'
+    echo 'Introduce el nombre del usuario'
+    read nombre
+    echo 'Introduce el primer apellido del usuario '$nombre
+    read apellido1
+    echo 'Introduce el segundo apellido del usuario '$nombre
+    read apellido2
+    echo 'Introduce el curso en el que se encuentra el usuario '$usuario
+    read curso
+
+    get_max_id 2
+    id=$?
+    id_new=$(($id + 1))
+    
+    usuario="$id_new,$nombre,$apellido1,$apellido2,$curso,0"
+    longitud_usuarios=${#USUARIOS[@]}
+    USUARIOS[$longitud_usuarios+1]=$usuario
+    save_data
+}
+
 # Menu prestamos
 menu_prestamos(){
     imprimir_menu_prestamos
     read opcion
     case $opcion in
         1)
-            echo 'Accediendo a nuevo prestamo'
+            nuevo_prestamo
         ;;
         2)
             echo 'Accedientdo a eliminar un prestamo'
@@ -103,6 +126,28 @@ menu_prestamos(){
             echo 'Consultar usuario (ID/Nombre)'
         ;;
     esac
+}
+
+# Nuevo prestamo
+nuevo_prestamo(){
+    linea
+    echo -e 'Añadir nuevo prestamo\n'
+    echo 'Selecciona el ID del Libro'
+    read libro_id
+    echo 'Selecciona el ID del Usuario'
+    read usuario_id
+
+    # TODO: Comprobar que el libro no ha sido prestado
+    # TODO: Comprobar que el usuario no tiene más de 3 prestamos
+
+    get_max_id 3
+    id=$?
+    id_new=$(($id + 1))
+    
+    prestamo="$id_new,$libro_id,$usuario_id"
+    longitud_prestamos=${#PRESTAMOS[@]}
+    PRESTAMOS[$longitud_prestamos+1]=$prestamo
+    save_data
 }
 
 # Comprueba que el valor introducido es válido
@@ -350,7 +395,6 @@ get_max_id(){
             for i in "${LIBROS[@]}";
             do
                 id=$(echo $i| cut -d',' -f 1)
-                echo 'Consultando con ID #'$id
                 if [ $id -gt $max_id ]
                 then
                     max_id=$id
