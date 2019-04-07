@@ -71,6 +71,42 @@ nuevo_libro(){
     save_data
 }
 
+# Eliminar libro
+eliminar_libro(){
+    linea
+    echo -e 'Eliminar libro\n'
+
+}
+
+# Listar libros
+listar_libros(){
+    for i in ${LIBROS[@]}
+    do
+        id=$(echo $i| cut -d',' -f 1)
+        titulo=$(echo $i| cut -d',' -f 2)
+        autor=$(echo $i| cut -d',' -f 3)
+        genero=$(echo $i| cut -d',' -f 4)
+        year=$(echo $i| cut -d',' -f 5)
+        estanteria=$(echo $i| cut -d',' -f 6)
+        prestado=$(echo $i| cut -d',' -f 7)
+
+        linea
+        echo 'ID: '$id
+        echo 'Titulo: '$titulo
+        echo 'Autor: '$autor
+        echo 'Genero: '$genero
+        echo 'Año: '$year
+        echo 'Estanteria: '$estanteria
+        if [ $prestado -eq 0 ]
+        then
+            echo 'Prestado: No'
+        else 
+            echo 'Prestado: Sí'
+        fi
+        linea
+    done
+}
+
 # Menu usuarios
 menu_usuarios(){
     imprimir_menu_usuarios
@@ -111,6 +147,27 @@ nuevo_usuario(){
     save_data
 }
 
+# Listar usuarios
+listar_usuarios(){
+    for i in ${USUARIOS[@]}
+    do
+        id=$(echo $i| cut -d',' -f 1)
+        nombre=$(echo $i| cut -d',' -f 2)
+        apellido1=$(echo $i| cut -d',' -f 3)
+        apellido2=$(echo $i| cut -d',' -f 4)
+        curso=$(echo $i| cut -d',' -f 5)
+        num_prest=$(echo $i| cut -d',' -f 6)
+
+        linea
+        echo 'ID: '$id
+        echo 'Nombre: '$nombre
+        echo 'Apellidos: '$apellido1 $apellido2
+        echo 'Curso: '$curso
+        echo 'Libros prestados: '$num_prest
+        linea
+    done
+}
+
 # Menu prestamos
 menu_prestamos(){
     imprimir_menu_prestamos
@@ -148,6 +205,22 @@ nuevo_prestamo(){
     longitud_prestamos=${#PRESTAMOS[@]}
     PRESTAMOS[$longitud_prestamos+1]=$prestamo
     save_data
+}
+
+# Listar prestamos
+listar_prestamos(){
+    for i in ${PRESTAMOS[@]}
+    do
+        id=$(echo $i| cut -d',' -f 1)
+        id_libro=$(echo $i| cut -d',' -f 2)
+        id_usuario=$(echo $i| cut -d',' -f 3)
+
+        linea
+        echo 'ID: '$id
+        echo 'ID Libro: '$id_libro
+        echo 'ID Usuario: '$id_usuario
+        linea
+    done
 }
 
 # Comprueba que el valor introducido es válido
