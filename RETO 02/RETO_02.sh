@@ -23,7 +23,7 @@ menu_principal() {
                 valido=true
             ;;
             *)
-                echo 'Perdona, no te he entendido'
+                echo 'El valor introducido no es válido, selecciona una opción del menú válida'
             ;;
         esac
     done
@@ -35,15 +35,40 @@ menu_libros(){
     read opcion
     case $opcion in
         1)
-            echo 'Accediendo a nuevo libro'
+            nuevo_libro
         ;;
         2)
-            echo 'Accedientdo a eliminar un libro'
+            eliminar_libro
         ;;
         3)
-            echo 'Consultar libro (ID/Nombre)'
+            consultar_libro
         ;;
     esac
+}
+
+# Nuevo libro
+nuevo_libro(){
+    linea
+    echo -e 'Añadir nuevo libro\n'
+    echo 'Introduce el titulo del libro'
+    read name
+    echo 'Introduce el autor del libro '$name
+    read autor
+    echo 'Introduce el genero del libro '$name
+    read genero
+    echo 'Introduce el año del libro '$name
+    read year
+    echo 'Introduce la estanteria del libro '$name
+    read estanteria
+
+    get_max_id 1
+    id=$?
+    id_new=$(($id + 1))
+    
+    libro="$id_new,$name,$autor,$genero,$year,$estanteria,0"
+    longitud_libros=${#LIBROS[@]}
+    LIBROS[$longitud_libros+1]=$libro
+    save_data
 }
 
 # Menu usuarios
@@ -103,6 +128,8 @@ check_number() {
 # Imprime menu princiapl
 imprimir_menu_principal() {
     linea
+    echo 'Menú principal'
+    linea
     echo '1. Gestión de libros'
     echo '2. Gestión de usuarios'
     echo '3. Gestión de préstamos'
@@ -143,10 +170,111 @@ imprimir_menu_prestamos(){
     echo '0. Cancelar'
 }
 
+# Consultar libro (ID/Nombre)
+# $1 ID / Nombre
+# Return -1 No se encuentra
+search_libro(){
+    localizado=-1
+    
+    if echo $1 | egrep -q '^[0-9]+$';
+    then
+        # Search by ID
+        for linea in "${LIBROS[@]}"; do
+            localizado=$((localizado+1))
+            id_linea=$(echo $linea| cut -d',' -f 1)
+            if [ $1 -eq $id_linea ]
+            then
+                return $localizado
+            fi
+        done
+    else
+        # Search by Name
+        for linea in "${LIBROS[@]}"; do
+            localizado=$((localizado+1))
+            nombre_linea=$(echo $linea| cut -d',' -f 2)
+            if test "${nombre_linea#*$1}" != "$nombre_linea"
+            then
+                return $localizado
+            fi
+        done
+    fi
+    
+    return $localizado
+}
+
+# Consultar Usuario (ID/Nombre)
+# $1 ID / Nombre
+# Return -1 No se encuentra
+search_usuario(){
+    localizado=-1
+    
+    if echo $1 | egrep -q '^[0-9]+$';
+    then
+        # Search by ID
+        for linea in "${USUARIOS[@]}"; do
+            localizado=$((localizado+1))
+            id_linea=$(echo $linea| cut -d',' -f 1)
+            if [ $1 -eq $id_linea ]
+            then
+                return $localizado
+            fi
+        done
+    else
+        # Search by Name
+        for linea in "${USUARIOS[@]}"; do
+            localizado=$((localizado+1))
+            nombre_linea=$(echo $linea| cut -d',' -f 2)
+            if test "${nombre_linea#*$1}" != "$nombre_linea"
+            then
+                return $localizado
+            fi
+        done
+    fi
+    
+    return $localizado
+}
+
+# Consultar Prestamo (ID Usuario / ID Libro)
+# $1 ID Libro | -1 No buscar libro
+# $2 ID Usuario | -1 No buscar usuario
+# Return -1 No se encuentra
+search_prestamo(){
+    localizado=-1
+    
+    if echo $1 | egrep -q '^[0-9]+$';
+    then
+        # Search by ID
+        if [ $1 -eq -1 ]
+        then
+            # Search by Usuario
+            for linea in "${PRESTAMOS[@]}"; do
+                localizado=$((localizado+1))
+                id_linea=$(echo $linea| cut -d',' -f 2)
+                if [ $1 -eq $id_linea ]
+                then
+                    return $localizado
+                fi
+            done
+        else
+            # Search by Libro
+            for linea in "${PRESTAMOS[@]}"; do
+                localizado=$((localizado+1))
+                id_linea=$(echo $linea| cut -d',' -f 3)
+                if [ $1 -eq $id_linea ]
+                then
+                    return $localizado
+                fi
+            done
+        fi
+    fi
+    
+    return $localizado
+}
+
 # Guarda todas las variables
 save_data(){
     linea
-
+    
     # BBDD Libros
     echo '' > libros.bd
     for val in "${LIBROS[@]}"; do
@@ -167,7 +295,7 @@ save_data(){
         echo $val >> prestamos.bd
     done
     echo '> La Base de datos de prestamos ha sido guardada correctamente'
-
+    
     linea
 }
 
@@ -211,6 +339,47 @@ load_data(){
     done < prestamos.bd
     echo '> La Base de datos de prestamos ha sido cargada correctamente'
     linea
+}
+
+# Devuelve el ID más alto
+# $1 Indica donde se consulta | 1 => Libros | 2 => Usuarios | 3 => Prestamos
+get_max_id(){
+    max_id=0
+    case $1 in
+        1)
+            for i in "${LIBROS[@]}";
+            do
+                id=$(echo $i| cut -d',' -f 1)
+                echo 'Consultando con ID #'$id
+                if [ $id -gt $max_id ]
+                then
+                    max_id=$id
+                fi
+            done
+        ;;
+        2)
+            for i in "${USUARIOS[@]}";
+            do
+                id=$(echo $i| cut -d',' -f 1)
+                if [ $id -gt $max_id ]
+                then
+                    max_id=$id
+                fi
+            done
+        ;;
+        3)
+            for i in "${PRESTAMOS[@]}";
+            do
+                id=$(echo $i| cut -d',' -f 1)
+                if [ $id -gt $max_id ]
+                then
+                    max_id=$id
+                fi
+            done
+        ;;
+    esac
+
+    return $max_id
 }
 
 # Quita elemento del array LIBROS y mueve el resto
