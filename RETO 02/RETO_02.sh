@@ -144,16 +144,73 @@ imprimir_menu_prestamos(){
 }
 
 # Guarda todas las variables
+save_data(){
+    linea
 
+    # BBDD Libros
+    echo '' > libros.bd
+    for val in "${LIBROS[@]}"; do
+        echo $val >> libros.bd
+    done
+    echo '> La Base de datos de libros ha sido guardada correctamente'
+    
+    # BBDD Usuarios
+    echo '' > usuarios.bd
+    for val in "${USUARIOS[@]}"; do
+        echo $val >> usuarios.bd
+    done
+    echo '> La Base de datos de usuarios ha sido guardada correctamente'
+    
+    # BBDD Prestamos
+    echo '' > prestamos.bd
+    for val in "${PRESTAMOS[@]}"; do
+        echo $val >> prestamos.bd
+    done
+    echo '> La Base de datos de prestamos ha sido guardada correctamente'
+
+    linea
+}
 
 # Carga todas las variables
 load_data(){
+    linea
+    
     # BBDD Libros
+    unset LIBROS[*]
+    longitud_libros=-1
     while IFS='' read -r linea || [[ -n "$linea" ]]; do
-        longitud_libros=${#LIBROS[@]}
-        LIBROS[$longitud_libros+1]=$linea
-        echo ">" ${LIBROS[@]}
-    done < file.txt
+        if [ ! -z "$linea" ]
+        then
+            LIBROS[$longitud_libros+1]=$linea
+            longitud_libros=${#LIBROS[@]}
+        fi
+    done < libros.bd
+    echo '> La Base de datos de libros ha sido cargada correctamente'
+    
+    # BBDD Usuarios
+    unset USUARIOS[*]
+    longitud_usuarios=-1
+    while IFS='' read -r linea || [[ -n "$linea" ]]; do
+        if [ ! -z "$linea" ]
+        then
+            USUARIOS[$longitud_usuarios+1]=$linea
+            longitud_usuarios=${#USUARIOS[@]}
+        fi
+    done < usuarios.bd
+    echo '> La Base de datos de usuarios ha sido cargada correctamente'
+    
+    # BBDD Libros
+    unset PRESTAMOS[*]
+    longitud_prestamos=-1
+    while IFS='' read -r linea || [[ -n "$linea" ]]; do
+        if [ ! -z "$linea" ]
+        then
+            PRESTAMOS[$longitud_prestamos+1]=$linea
+            longitud_prestamos=${#PRESTAMOS[@]}
+        fi
+    done < prestamos.bd
+    echo '> La Base de datos de prestamos ha sido cargada correctamente'
+    linea
 }
 
 # Quita elemento del array LIBROS y mueve el resto
@@ -187,6 +244,7 @@ LIBROS[0]=0
 USUARIOS[0]=0
 PRESTAMOS[0]=0
 linea
-menu_principal
-linea
 load_data
+menu_principal
+save_data
+linea
