@@ -86,15 +86,22 @@ eliminar_libro(){
     then
         echo 'No se ha encontrado el Libro con el ID '$id_libro_borrar' en el sistema'
     else
-        echo 'Libro borrado correctamente'
-        save_data
+        check_libro_prestado $id_libro_borrar
+        prestado=$?
+        if [ $prestado -eq 0 ]
+        then
+            echo 'Libro borrado correctamente'
+            save_data
+        else
+            echo 'El libro actualmente se encunetra en un prestamo, no se puede borrar'
+        fi
     fi
 }
 
 # Cosnultar libro
 consultar_libro(){
     linea
-    echo 'Introduzca el ID del libro que desea consultar'
+    echo 'Introduzca el ID o nombre del libro que desea consultar, en caso de encontrar varios libros con el mismo nombre se mostrara el primero que se encuentre'
     read id_search
     search_libro $id_search
     encontrado=$?
@@ -217,24 +224,32 @@ eliminar_usuario(){
     then
         echo 'No se ha encontrado el Usuario con el ID '$id_usuario_borrar' en el sistema'
     else
-        shift_usuarios $posicion
-        echo 'Usuario borrado correctamente'
-        save_data
+        # No se puede eliminar si tiene prestamos
+        check_user_prestado $id_usuario_borrar
+        prestado=$?
+        if [ $prestado -eq 0 ]
+        then
+            shift_usuarios $posicion
+            echo 'Usuario borrado correctamente'
+            save_data
+        else
+            echo 'El usuario con ID '$id_usuario_borrar' tiene libros prestados, no se puede eliminar'
+        fi
     fi
 }
 
 # Cosnultar usuario
 consultar_usuario(){
     linea
-    echo 'Introduzca el ID del libro que desea consultar'
+    echo 'Introduzca el ID o nombre del usuario que desea consultar, en caso de encontrar varios libros con el mismo nombre se mostrara el primero que se encuentre'
     read id_search
-    search_libro $id_search
+    search_usuario $id_search
     encontrado=$?
     if [ $encontrado -eq 255 ]
     then
         echo 'No hay ningún libro en el sistema con el ID '$id_search
     else
-        i=${LIBROS[$encontrado]}
+        i=${USUARIOS[$encontrado]}
 
         id=$(echo $i| cut -d',' -f 1)
         nombre=$(echo $i| cut -d',' -f 2)
@@ -310,17 +325,31 @@ nuevo_prestamo(){
     echo 'Selecciona el ID del Usuario'
     read usuario_id
 
-    # TODO: Comprobar que el libro no ha sido prestado
-    # TODO: Comprobar que el usuario no tiene más de 3 prestamos
+    # Comprobar que el libro no ha sido prestado
+    check_libro_prestado $libro_id
+    libro_prestado=$?
+    # Comprobar que el usuario no tiene más de 3 prestamos
+    check_user_limit_prestado $usuario_id
+    limite_prestado=$?
 
-    get_max_id 3
-    id=$?
-    id_new=$(($id + 1))
-    
-    prestamo="$id_new,$libro_id,$usuario_id"
-    longitud_prestamos=${#PRESTAMOS[@]}
-    PRESTAMOS[$longitud_prestamos+1]=$prestamo
-    save_data
+    if [ $libro_prestado -eq 0 ]
+    then
+        if [ $limite_prestado -eq 0 ]
+        then
+            get_max_id 3
+            id=$?
+            id_new=$(($id + 1))
+            
+            prestamo="$id_new,$libro_id,$usuario_id"
+            longitud_prestamos=${#PRESTAMOS[@]}
+            PRESTAMOS[$longitud_prestamos+1]=$prestamo
+            save_data
+        else
+            echo 'El Usuario con ID '$usuario_id' tiene 3 prestamos y no puede solicitar más prestamos'
+        fi
+    else
+        echo 'El Libro con ID '$libro_id' ya se encuentra prestado'
+    fi
 }
 
 
@@ -390,6 +419,120 @@ listar_prestamos(){
             linea
         done
     fi
+}
+
+# Comprueba si libro esta prestado
+# $1 ID del Libro
+# Returns 0 => No prestado | 1 => Prestado
+check_libro_prestado(){
+    search_libro $1
+    posicion=$?
+
+    if [ $posicion -eq -1 ]
+    then
+        echo 'El libro con el ID '$1' no se encuentra'
+        return 0
+    else
+        # search_prestamo Libro Usuario IDPRESTAMO 
+        search_prestamo $1
+        resultado=$?
+
+        i=${LIBROS[$posicion]}
+
+        id=$(echo $i| cut -d',' -f 1)
+        titulo=$(echo $i| cut -d',' -f 2)
+        autor=$(echo $i| cut -d',' -f 3)
+        genero=$(echo $i| cut -d',' -f 4)
+        year=$(echo $i| cut -d',' -f 5)
+        estanteria=$(echo $i| cut -d',' -f 6)
+
+        if [ $resultado -eq 255 ]
+        then
+            # Sin prestar
+            prestado=0
+            LIBROS[$posicion]="$id,$titulo,$autor,$genero,$year,$estanteria,$prestado"
+            return 0
+        else
+            # Prestado
+            prestado=1
+            LIBROS[$posicion]="$id,$titulo,$autor,$genero,$year,$estanteria,$prestado"
+            return 1
+        fi
+    fi
+}
+
+# Comprueba si usuario tiene algun prestamo
+# $1 ID del Usuario
+# Returns 0 => No prestado | 1 => Prestado
+check_user_prestado(){
+    search_usuario $1
+    posicion=$?
+
+    if [ $posicion -eq -1 ]
+    then
+        echo 'El Usuario con el ID '$1' no se encuentra'
+        return 0
+    else
+        # search_prestamo Libro Usuario IDPRESTAMO 
+        search_prestamo 0 $1
+        resultado=$?
+
+        i=${USUARIOS[$posicion]}
+
+        id=$(echo $i| cut -d',' -f 1)
+        nombre=$(echo $i| cut -d',' -f 2)
+        apellido1=$(echo $i| cut -d',' -f 3)
+        apellido2=$(echo $i| cut -d',' -f 4)
+        curso=$(echo $i| cut -d',' -f 5)
+
+        if [ $resultado -eq 255 ]
+        then
+            # Sin prestar
+            prestado=0
+            USUARIOS[$posicion]="$id,$nombre,$apellido1,$apellido2,$curso,$prestado"
+            return 0
+        else
+            # Prestado
+            prestado=1
+            USUARIOS[$posicion]="$id,$nombre,$apellido1,$apellido2,$curso,$prestado"
+            return 1
+        fi
+    fi
+}
+
+# Comprueba si el usuario esta al limite del Nº de prestamos
+# $1 ID del usuario
+check_user_limit_prestado(){
+    search_usuario $1
+    posicion=$?
+
+    if [ $posicion -eq -1 ]
+    then
+        echo 'El Usuario con ID '$1' no se encuentra'
+        return 0
+    else
+        num_prestamos=0
+
+        for linea in "${PRESTAMOS[@]}"; do
+            localizado=$((localizado+1))
+            id_linea=$(echo $linea| cut -d',' -f 3)
+            if [ $1 -eq $id_linea ]
+            then
+                num_prestamos=$((num_prestamos+1))
+            fi
+        done
+
+        if [ $num_prestamos -lt 3 ]
+        then
+            # Valido
+            return 1
+        else
+            # Al limite / Excede
+            return 0
+        fi
+    fi
+
+    return 0
 }
 
 # Comprueba que el valor introducido es válido
@@ -528,7 +671,6 @@ search_usuario(){
 # Return -1 No se encuentra
 search_prestamo(){
     localizado=-1  
-    echo "Buscando prestamo con $1 $2 $3"
     
     if echo $1 | egrep -q '^[0-9]+$';
     then
