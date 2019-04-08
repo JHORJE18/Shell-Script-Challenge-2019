@@ -288,8 +288,7 @@ menu_prestamos(){
             nuevo_prestamo
         ;;
         2)
-            # TODO: Eliminar prestamo
-            echo 'Accedientdo a eliminar un prestamo'
+            eliminar_prestamo
         ;;
         3)
             linea
@@ -297,8 +296,7 @@ menu_prestamos(){
             listar_prestamos
         ;;
         4)
-            # TODO: Consulta prestamo
-            echo 'Consultar un prestamo (ID Usuario/ID Libro'
+            consultar_prestamo
         ;;
     esac
 }
@@ -323,6 +321,54 @@ nuevo_prestamo(){
     longitud_prestamos=${#PRESTAMOS[@]}
     PRESTAMOS[$longitud_prestamos+1]=$prestamo
     save_data
+}
+
+
+# Eliminar prestamo
+eliminar_prestamo(){
+    linea
+    echo -e 'Eliminar prestamo\n'
+    listar_prestamos
+    echo 'Selecciona el ID del prestamo que desea eiminar'
+    read id_prestamo_borrar
+    search_prestamo 0 0 $id_prestamo_borrar
+    posicion=$?
+    echo "Se ha recibido la orden de eliminar el ID $id_prestamo_borrar en la posicion localizada $posicion"
+
+    if [ $posicion -eq 255 ]
+    then
+        echo 'No se ha encontrado el Prestamo con el ID '$id_prestamo_borrar' en el sistema'
+    else
+        shift_prestamos $posicion
+        echo 'Prestamo borrado correctamente'
+        save_data
+    fi
+}
+
+# Cosnultar usuario
+consultar_prestamo(){
+    linea
+    echo 'Introduzca el ID del prestamo que desea consultar'
+    read id_search
+    search_prestamo $id_search
+    encontrado=$?
+    if [ $encontrado -eq 255 ]
+    then
+        echo 'No hay ningún prestamo en el sistema con el ID '$id_search
+    else
+        i=${PRESTAMOS[$encontrado]}
+
+        id=$(echo $i| cut -d',' -f 1)
+        id_libro=$(echo $i| cut -d',' -f 2)
+        id_usuario=$(echo $i| cut -d',' -f 3)
+
+        linea
+        echo 'ID: '$id
+        echo 'ID Libro: '$id_libro
+        echo 'ID Usuario: '$id_usuario
+        linea
+    fi
+    linea
 }
 
 # Listar prestamos
@@ -476,32 +522,47 @@ search_usuario(){
 }
 
 # Consultar Prestamo (ID Usuario / ID Libro)
-# $1 ID Libro | -1 No buscar libro
-# $2 ID Usuario | -1 No buscar usuario
+# $1 ID Libro | 0 No buscar libro
+# $2 ID Usuario | 0 No buscar usuario
+# $3 ID Prestamo
 # Return -1 No se encuentra
 search_prestamo(){
-    localizado=-1
+    localizado=-1  
+    echo "Buscando prestamo con $1 $2 $3"
     
     if echo $1 | egrep -q '^[0-9]+$';
     then
-        # Search by ID
-        if [ $1 -eq -1 ]
+        # Search by ID ?
+        if [ $1 -eq 0 ]
         then
-            # Search by Usuario
-            for linea in "${PRESTAMOS[@]}"; do
-                localizado=$((localizado+1))
-                id_linea=$(echo $linea| cut -d',' -f 2)
-                if [ $1 -eq $id_linea ]
-                then
-                    return $localizado
-                fi
-            done
+            if [ $2 -eq 0 ]
+            then
+                # Search by ID Prestamo
+                for linea in "${PRESTAMOS[@]}"; do
+                    localizado=$((localizado+1))
+                    id_linea=$(echo $linea| cut -d',' -f 1)
+                    if [ $3 -eq $id_linea ]
+                    then
+                        return $localizado
+                    fi
+                done
+            else
+                # Search by Usuario
+                for linea in "${PRESTAMOS[@]}"; do
+                    localizado=$((localizado+1))
+                    id_linea=$(echo $linea| cut -d',' -f 3)
+                    if [ $2 -eq $id_linea ]
+                    then
+                        return $localizado
+                    fi
+                done
+            fi
         else
-            # Search by Libro
+            # Search by ID Libro
             for linea in "${PRESTAMOS[@]}"; do
-                localizado=$((localizado+1))
-                id_linea=$(echo $linea| cut -d',' -f 3)
-                if [ $1 -eq $id_linea ]
+            localizado=$((localizado+1))
+            id_linea=$(echo $linea| cut -d',' -f 2)
+            if [ $1 -eq $id_linea ]
                 then
                     return $localizado
                 fi
