@@ -81,8 +81,52 @@ eliminar_libro(){
     search_libro $id_libro_borrar
     posicion=$?
     shift_libros $posicion
-    echo 'Libro borrado correctamente'
-    save_data
+
+    if [ $posicion -eq 255 ]
+    then
+        echo 'No se ha encontrado el Libro con el ID '$id_libro_borrar' en el sistema'
+    else
+        echo 'Libro borrado correctamente'
+        save_data
+    fi
+}
+
+# Cosnultar libro
+consultar_libro(){
+    linea
+    echo 'Introduzca el ID del libro que desea consultar'
+    read id_search
+    search_libro $id_search
+    encontrado=$?
+    if [ $encontrado -eq 255 ]
+    then
+        echo 'No hay ningún libro en el sistema con el ID '$id_search
+    else
+        i=${LIBROS[$encontrado]}
+
+        id=$(echo $i| cut -d',' -f 1)
+        titulo=$(echo $i| cut -d',' -f 2)
+        autor=$(echo $i| cut -d',' -f 3)
+        genero=$(echo $i| cut -d',' -f 4)
+        year=$(echo $i| cut -d',' -f 5)
+        estanteria=$(echo $i| cut -d',' -f 6)
+        prestado=$(echo $i| cut -d',' -f 7)
+
+        linea
+        echo 'ID: '$id
+        echo 'Titulo: '$titulo
+        echo 'Autor: '$autor
+        echo 'Genero: '$genero
+        echo 'Año: '$year
+        echo 'Estanteria: '$estanteria
+        if [ $prestado -eq 0 ]
+        then
+            echo 'Prestado: No'
+        else 
+            echo 'Prestado: Sí'
+        fi
+    fi
+    linea
 }
 
 # Listar libros
@@ -91,15 +135,15 @@ listar_libros(){
     then
         echo 'No hay libros guardados'
     else
-        for i in ${LIBROS[@]}
+        for i in "${LIBROS[@]}";
         do
-            id=$(echo $i| cut -d',' -f 0)
-            titulo=$(echo $i| cut -d',' -f 1)
-            autor=$(echo $i| cut -d',' -f 2)
-            genero=$(echo $i| cut -d',' -f 3)
-            year=$(echo $i| cut -d',' -f 4)
-            estanteria=$(echo $i| cut -d',' -f 5)
-            prestado=$(echo $i| cut -d',' -f 6)
+            id=$(echo $i| cut -d',' -f 1)
+            titulo=$(echo $i| cut -d',' -f 2)
+            autor=$(echo $i| cut -d',' -f 3)
+            genero=$(echo $i| cut -d',' -f 4)
+            year=$(echo $i| cut -d',' -f 5)
+            estanteria=$(echo $i| cut -d',' -f 6)
+            prestado=$(echo $i| cut -d',' -f 7)
 
             linea
             echo 'ID: '$id
@@ -168,12 +212,12 @@ listar_usuarios(){
     else
         for i in ${USUARIOS[@]}
         do
-            id=$(echo $i| cut -d',' -f 0)
-            nombre=$(echo $i| cut -d',' -f 1)
-            apellido1=$(echo $i| cut -d',' -f 2)
-            apellido2=$(echo $i| cut -d',' -f 3)
-            curso=$(echo $i| cut -d',' -f 4)
-            num_prest=$(echo $i| cut -d',' -f 5)
+            id=$(echo $i| cut -d',' -f 1)
+            nombre=$(echo $i| cut -d',' -f 2)
+            apellido1=$(echo $i| cut -d',' -f 3)
+            apellido2=$(echo $i| cut -d',' -f 4)
+            curso=$(echo $i| cut -d',' -f 5)
+            num_prest=$(echo $i| cut -d',' -f 6)
 
             linea
             echo 'ID: '$id
@@ -240,9 +284,9 @@ listar_prestamos(){
     else
         for i in ${PRESTAMOS[@]}
         do
-            id=$(echo $i| cut -d',' -f 0)
-            id_libro=$(echo $i| cut -d',' -f 1)
-            id_usuario=$(echo $i| cut -d',' -f 2)
+            id=$(echo $i| cut -d',' -f 1)
+            id_libro=$(echo $i| cut -d',' -f 2)
+            id_usuario=$(echo $i| cut -d',' -f 3)
 
             linea
             echo 'ID: '$id
@@ -475,7 +519,7 @@ load_data(){
     done < usuarios.bd
     echo '> La Base de datos de usuarios ha sido cargada correctamente'
     
-    # BBDD Libros
+    # BBDD Prestamos
     unset PRESTAMOS[*]
     longitud_prestamos=-1
     while IFS='' read -r linea || [[ -n "$linea" ]]; do
@@ -486,6 +530,7 @@ load_data(){
         fi
     done < prestamos.bd
     echo '> La Base de datos de prestamos ha sido cargada correctamente'
+    limpiar_arrays
     linea
 }
 
@@ -527,6 +572,13 @@ get_max_id(){
     esac
 
     return $max_id
+}
+
+# Limpia el Array para evitar elementos vacios
+limpiar_arrays(){
+    LIBROS=( "${LIBROS[@]}" )
+    USUARIOS=( "${USUARIOS[@]}")
+    PRESTAMOS=( "${PRESTAMOS[@]}")
 }
 
 # Quita elemento del array LIBROS y mueve el resto
