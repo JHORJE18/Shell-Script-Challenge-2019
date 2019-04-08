@@ -172,11 +172,10 @@ menu_usuarios(){
             nuevo_usuario
         ;;
         2)
-            # TODO: Eliminar usuario
-            echo 'Accedientdo a eliminar un usuario'
+            eliminar_usuario
         ;;
         3)
-            echo 'Consultar usuario (ID/Nombre)'
+            consultar_usuario
         ;;
     esac
 }
@@ -204,13 +203,63 @@ nuevo_usuario(){
     save_data
 }
 
+# Eliminar usuario
+eliminar_usuario(){
+    linea
+    echo -e 'Eliminar usuario\n'
+    listar_usuarios
+    echo 'Selecciona el ID del usuario que desea eiminar'
+    read id_usuario_borrar
+    search_usuario $id_usuario_borrar
+    posicion=$?
+
+    if [ $posicion -eq 255 ]
+    then
+        echo 'No se ha encontrado el Usuario con el ID '$id_usuario_borrar' en el sistema'
+    else
+        shift_usuarios $posicion
+        echo 'Usuario borrado correctamente'
+        save_data
+    fi
+}
+
+# Cosnultar usuario
+consultar_usuario(){
+    linea
+    echo 'Introduzca el ID del libro que desea consultar'
+    read id_search
+    search_libro $id_search
+    encontrado=$?
+    if [ $encontrado -eq 255 ]
+    then
+        echo 'No hay ningún libro en el sistema con el ID '$id_search
+    else
+        i=${LIBROS[$encontrado]}
+
+        id=$(echo $i| cut -d',' -f 1)
+        nombre=$(echo $i| cut -d',' -f 2)
+        apellido1=$(echo $i| cut -d',' -f 3)
+        apellido2=$(echo $i| cut -d',' -f 4)
+        curso=$(echo $i| cut -d',' -f 5)
+        num_prest=$(echo $i| cut -d',' -f 6)
+
+        linea
+        echo 'ID: '$id
+        echo 'Nombre: '$nombre
+        echo 'Apellidos: '$apellido1 $apellido2
+        echo 'Curso: '$curso
+        echo 'Libros prestados: '$num_prest
+    fi
+    linea
+}
+
 # Listar usuarios
 listar_usuarios(){
     if [ ${#USUARIOS[@]} -eq 0 ]
     then
         echo 'No hay usuarios guardados'
     else
-        for i in ${USUARIOS[@]}
+        for i in "${USUARIOS[@]}"
         do
             id=$(echo $i| cut -d',' -f 1)
             nombre=$(echo $i| cut -d',' -f 2)
@@ -282,7 +331,7 @@ listar_prestamos(){
     then
         echo 'No hay prestamos guardados'
     else
-        for i in ${PRESTAMOS[@]}
+        for i in "${PRESTAMOS[@]}"
         do
             id=$(echo $i| cut -d',' -f 1)
             id_libro=$(echo $i| cut -d',' -f 2)
@@ -391,7 +440,7 @@ search_libro(){
         done
     fi
     
-    return $localizado
+    return -1
 }
 
 # Consultar Usuario (ID/Nombre)
@@ -423,7 +472,7 @@ search_usuario(){
         done
     fi
     
-    return $localizado
+    return -1
 }
 
 # Consultar Prestamo (ID Usuario / ID Libro)
@@ -460,7 +509,7 @@ search_prestamo(){
         fi
     fi
     
-    return $localizado
+    return -1
 }
 
 # Guarda todas las variables
